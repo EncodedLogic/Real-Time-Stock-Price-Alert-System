@@ -18,7 +18,7 @@ public class StockService {
     private static final String STOCK_DETAILS_URL = "https://finnhub.io/api/v1/quote?symbol={symbol}&token={apiKey}";
 
     public Map<String, Object> fetchStockDetailsFromExternalApi(String symbol){
-        String url = STOCK_DETAILS_URL.replace("{symbol}",symbol).replace("{api_key}",api_key);
+        String url = STOCK_DETAILS_URL.replace("{symbol}",symbol).replace("{apiKey}",api_key);
         ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
