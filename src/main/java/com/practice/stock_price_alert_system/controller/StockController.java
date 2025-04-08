@@ -2,15 +2,18 @@ package com.practice.stock_price_alert_system.controller;
 
 import com.practice.stock_price_alert_system.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
 @RequestMapping("/stocks")
 public class StockController {
 
@@ -25,4 +28,20 @@ public class StockController {
     public ResponseEntity<Map<String, Object>> getStockDetails(@PathVariable String symbol){
         return ResponseEntity.ok(stockService.fetchStockDetailsFromExternalApi(symbol));
     }
+
+    @GetMapping("/yahoo/top-gainers")
+    public ResponseEntity<List<Map<String, Object>>> getTopGainersFromYahoo() {
+        try {
+            List<Map<String, Object>> gainers = stockService.getTopGainersFromYahoo();
+            if (gainers.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(Collections.emptyList());
+            }
+            return ResponseEntity.ok(gainers);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.emptyList());
+        }
+    }
+
 }

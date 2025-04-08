@@ -1,6 +1,6 @@
-package com.practice.stock_price_alert_system.security;
+package com.practice.stock_price_alert_system.config;
 
-import jakarta.servlet.Filter;
+import com.practice.stock_price_alert_system.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
