@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/stocks")
+//@RequestMapping("/stocks")
 public class StockController {
 
     private final StockService stockService;
@@ -24,15 +24,15 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    @GetMapping("/{symbol}")
+    @GetMapping("/stocks/{symbol}")
     public ResponseEntity<Map<String, Object>> getStockDetails(@PathVariable String symbol){
-        return ResponseEntity.ok(stockService.fetchStockDetailsFromExternalApi(symbol));
+        return ResponseEntity.ok(stockService.fetchStockDetails(symbol));
     }
 
-    @GetMapping("/yahoo/top-gainers")
+    @GetMapping("/")
     public ResponseEntity<List<Map<String, Object>>> getTopGainersFromYahoo() {
         try {
-            List<Map<String, Object>> gainers = stockService.getTopGainersFromYahoo();
+            List<Map<String, Object>> gainers = stockService.getTopGainersDetails();
             if (gainers.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(Collections.emptyList());
             }

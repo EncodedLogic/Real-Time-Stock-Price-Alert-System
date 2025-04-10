@@ -1,14 +1,14 @@
 package com.practice.stock_price_alert_system.service;
 
 import com.practice.stock_price_alert_system.config.SecretsManager;
+import com.practice.stock_price_alert_system.exception.GlobalException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class StockService {
@@ -28,7 +28,7 @@ public class StockService {
     }
 
 
-    public Map<String, Object> fetchStockDetailsFromExternalApi(String symbol){
+    public Map<String, Object> fetchStockDetails(String symbol){
         return finnhubClient.get().uri(uriBuilder -> uriBuilder
                 .path("/quote")
                 .queryParam("symbol", symbol)
@@ -39,14 +39,14 @@ public class StockService {
                 .block();
     }
 
-    public Map<String,String> getStockSymbols(){
+    public Map<String,Object> getStockSymbols(){
         return finnhubClient.get().uri(uriBuilder -> uriBuilder
                 .path("/stock/symbol")
                         .queryParam("exchange","US")
                         .queryParam("token",secretsManager.getFinnhubApiKey())
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String,String>>(){})
+                .bodyToMono(new ParameterizedTypeReference<Map<String,Object>>(){})
                 .block();
     }
 
@@ -72,4 +72,44 @@ public class StockService {
                 })
                 .block();
     }
+
+    @Cacheable(value = "topGainersCache")
+    public List<Map<String, Object>> getTopGainersDetails(){
+        List<Map<String,Object>> detailedCollection = getTopGainersFromYahoo();
+
+       return detailedCollection.stream()
+                .map(eachMap -> {
+                    String stockSymbol =(String) eachMap.get("symbol");
+                    if(stockSymbol!=null){
+                        Map<String, Object> fetchedStockDetails = new HashMap<>(Map.of("symbol", stockSymbol));
+                        Object resultObj = stockSearchBySymbol(stockSymbol).get("result");
+                        if(resultObj instanceof List<?> resultList){
+                            for(Object obj : resultList){
+                                if(obj instanceof Map<?,?> item){
+                                    String stockSym = (String)item.get("displaySymbol");
+                                    if(stockSym.equalsIgnoreCase(stockSymbol)){
+                                        fetchedStockDetails.put("companyName",item.get("description"));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        fetchedStockDetails.putAll(fetchStockDetails(stockSymbol));
+                        System.out.println(">>> Fetching fresh top gainers");
+                        return fetchedStockDetails;
+                    }else{
+                        throw new GlobalException("Bro this symbol doesn't exists");
+                    }
+                }).filter(Objects::nonNull).toList();
+    }
+
+    public Map<String,Object> stockSearchBySymbol(String symbol){
+        return finnhubClient.get().uri(uriBuilder -> uriBuilder
+                        .path("/search")
+                        .queryParam("q",symbol)
+                        .queryParam("token",secretsManager.getFinnhubApiKey())
+                        .build())
+                .retrieve().bodyToMono(new ParameterizedTypeReference<Map<String,Object>>() {}).block();
+    }
+
 }
