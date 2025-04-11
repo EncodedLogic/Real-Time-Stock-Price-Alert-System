@@ -2,9 +2,11 @@ package com.practice.stock_price_alert_system.service;
 
 import com.practice.stock_price_alert_system.config.SecretsManager;
 import com.practice.stock_price_alert_system.exception.GlobalException;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -27,7 +29,14 @@ public class StockService {
         this.secretsManager = secretsManager;
     }
 
+    @PostConstruct
+    public void warmupCache() {
+        System.out.println("Fetching top gainers cache at startup...");
+        getTopGainersDetails();
+    }
 
+
+    @Cacheable("stockDetailsFinnhubCache")
     public Map<String, Object> fetchStockDetails(String symbol){
         return finnhubClient.get().uri(uriBuilder -> uriBuilder
                 .path("/quote")
@@ -56,7 +65,7 @@ public class StockService {
                         .path("/market/v2/get-movers")
                         .queryParam("region", "US")
                         .queryParam("lang", "en-US")
-                        .queryParam("count", 20)
+                        .queryParam("count", 10)
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
@@ -73,7 +82,8 @@ public class StockService {
                 .block();
     }
 
-    @Cacheable(value = "topGainersCache")
+    @Scheduled(fixedRate = 600000)
+    @Cacheable(value = "topGainersFinnhubYahooCache")
     public List<Map<String, Object>> getTopGainersDetails(){
         List<Map<String,Object>> detailedCollection = getTopGainersFromYahoo();
 
@@ -103,6 +113,7 @@ public class StockService {
                 }).filter(Objects::nonNull).toList();
     }
 
+    @Cacheable("stockSearchFinnhubCache")
     public Map<String,Object> stockSearchBySymbol(String symbol){
         return finnhubClient.get().uri(uriBuilder -> uriBuilder
                         .path("/search")
