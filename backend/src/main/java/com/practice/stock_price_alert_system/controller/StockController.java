@@ -44,4 +44,20 @@ public class StockController {
         }
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<?> profile(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.getProfile(userDetails.getUsername());
+        return ResponseEntity.ok(user);
+    }
+
+    @PostMapping
+    public ResponseEntity<Product> addProduct(@RequestBody Product product) {
+        return ResponseEntity.ok(service.addProduct(product));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Product>> getAll() {
+        return ResponseEntity.ok(service.getAllProducts());
+    }
+
 }
